@@ -1,0 +1,12 @@
+{
+  "alarm_amount": 1000,
+  "alarm_bot_key": "45eaf6cb-b729-42a1-917d-75bf37e799de",
+  "effective_agents": [
+    "jieshuibang"
+  ],
+  "jieshuibang": {
+    "merchant_no": "ME1239865725909204992",
+    "levy_no": "LC0008",
+    "key": "WzfbHuaqlg2TbRUkFyuEMrCC6kPA95tc"
+  }
+}
