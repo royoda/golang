@@ -13,6 +13,7 @@ type two struct {
 	Two int64
 }
 func main() {
+	fmt.Println("第二次")
 	str := fmt.Sprintf("TRADE-%d-%d-%d-%s%d",
 		1,
 		8,
