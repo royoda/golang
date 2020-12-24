@@ -13,7 +13,11 @@ type two struct {
 	Two int64
 }
 func main() {
+//<<<<<<< Updated upstream  这是我本地的代码
 	fmt.Println("第二次")
+//=======	  这是从缓存取出的代码
+	fmt.Println(0x000000000000020)
+//>>>>>>> Stashed changes
 	str := fmt.Sprintf("TRADE-%d-%d-%d-%s%d",
 		1,
 		8,
