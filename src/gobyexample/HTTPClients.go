@@ -1,9 +1,10 @@
 package main
 
 import (
-"bufio"
-"fmt"
-"net/http"
+	"bufio"
+	"fmt"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -13,12 +14,17 @@ func main() {
 		panic(err)
 	}
 	defer resp.Body.Close()
-
 	fmt.Println("Response status:", resp.Status)
 
 	scanner := bufio.NewScanner(resp.Body)
-	for i := 0; scanner.Scan() && i < 5; i++ {
-		fmt.Println(scanner.Text())
+
+	//1创建文件
+	f, _ := os.Create("/tmp/go.html")
+	defer f.Close()
+	for i := 0; scanner.Scan(); i++ {
+		//fmt.Println(scanner.Text())
+		//2写入文件
+		f.WriteString(scanner.Text() + "\n")
 	}
 
 	if err := scanner.Err(); err != nil {
