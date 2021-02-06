@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/golang-module/carbon"
 )
 
 func main() {
@@ -20,4 +21,6 @@ func main() {
 		fmt.Println(pageSize)
 		page = page + 1
 	}
+	fmt.Println(carbon.Parse("2020-08-05").StartOfDay().ToDateTimeString())
+	fmt.Println(carbon.Parse("2020-08-05").EndOfDay().ToDateTimeString())
 }

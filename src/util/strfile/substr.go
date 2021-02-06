@@ -1,17 +1,31 @@
 package main
 
-import (
-	"fmt"
-	"github.com/golang-module/carbon"
-	"regexp"
-)
+import "fmt"
 
+type ToutiaoADReporter struct{}
+
+// ADVendor 广告供应商
+func (t ToutiaoADReporter) ADVendor() int {
+	return 1
+}
 // 截取字符串
 func main() {
-	t := carbon.Now()
-	t = carbon.Now().Yesterday().StartOfDay()
-	// 10分钟后
-	t.AddMinutes(10).ToDateTimeString()
+	re := new(ToutiaoADReporter)
+	fmt.Println(re == nil)
+	fmt.Println(re.ADVendor())
+	/*str := ""
+	for i := 0; i < 10000; i++ {
+		str += `"AP-JT-SSW28-1000010-5e31242e2",`
+	}
+	fmt.Println(str)
+	f := 1e100
+	i := int(f)
+	x := 123456789.04546
+	x1 := 12345.04546
+	fmt.Printf("%f\n",f)
+	fmt.Printf("%8.3f\n",x)
+	fmt.Printf("%8.3f\n",x1)
+	fmt.Printf("%d",i)*/
 	/*ms := map[string]string{
 		"AP-JT-SSW28"	:	"ssw@xinyu100.com",
 		"AP-YQ-DX3"		:	"HN_daxie3@xinyu100.com",
@@ -56,12 +70,12 @@ func main() {
 		"WX-YQ851"		:	"1571827851",
 		"WX-YQ931"		:	"1528731931",
 	}*/
-	arr := []string{"ALIPAY-100007-5B73D3BF", "AP-YQ452-1006107-6006B2E1", "AP-JT-SSW28-1000010-5e31242e2"}
+	/*arr := []string{"ALIPAY-100007-5B73D3BF", "AP-YQ452-1006107-6006B2E1", "AP-JT-SSW28-1000010-5e31242e2"}
 	for _, s := range arr {
 		reg := `(.*?)-\d{1,8}-.*`
 		//match , _:= regexp.MatchString(reg, s)
 		r, _ := regexp.Compile(reg)
 		s1 := r.FindStringSubmatch(s)
 		fmt.Println(s1[1])
-	}
+	}*/
 }
