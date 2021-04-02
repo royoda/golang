@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ToutiaoADReporter struct{}
 
@@ -10,9 +13,12 @@ func (t ToutiaoADReporter) ADVendor() int {
 }
 // 截取字符串
 func main() {
-	re := new(ToutiaoADReporter)
+	curTime := time.Now()
+	fmt.Println(curTime.Add(time.Minute * -1).Format("2006-01-02 15:04:05"))
+	fmt.Println(curTime.Format("2006-01-02 15:04:05"))
+	/*re := new(ToutiaoADReporter)
 	fmt.Println(re == nil)
-	fmt.Println(re.ADVendor())
+	fmt.Println(re.ADVendor())*/
 	/*str := ""
 	for i := 0; i < 10000; i++ {
 		str += `"AP-JT-SSW28-1000010-5e31242e2",`

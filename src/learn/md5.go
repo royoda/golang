@@ -17,9 +17,22 @@ func main() {
 	  endTime := currentTime.AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59" // 获取昨天的时间
 	  fmt.Println(startTime)
 	  fmt.Println(endTime)*/
+	zhi := `{
+    "Param": {
+        "applicationId": 1,
+        "page": 1,
+        "pageSize": 30,
+        "queryAnalyzeIds": "1",
+        "queryAnalyzeType": 2,
+        "timeGranularity": "3",
+        "startTime": "2021-03-12 14:47:36",
+        "endTime": "2021-03-19 14:47:36"
+    }
+}$bv%goKM&EybE^G6`
+
 	var ssss = "{\"app_id\":8,\"content\":\"心与科技\"}$bv%goKM&EybE^G6"
 	fmt.Printf("%v\n", ssss)
-	fmt.Println(MD5(ssss))
+	fmt.Println(MD5(zhi))
 	var am = make(map[string]interface{}, 0)
 	am["app_id"] = 8
 	am["content"] = "心与科技"

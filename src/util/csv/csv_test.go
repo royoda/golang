@@ -2,6 +2,7 @@ package csv
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"testing"
 	"time"
@@ -41,4 +42,13 @@ func TestWriterCSV(t *testing.T) {
 	end = time.Now()
 	fmt.Println("execute time=", end.UnixNano()-start.UnixNano())
 	//fmt.Println(string(buf))
+}
+
+func TestName(t *testing.T) {
+	//2147483647
+	fmt.Println(math.MaxInt64)
+	fmt.Println(math.MaxInt32)
+	fmt.Println(math.MaxInt8)
+
+	fmt.Println(^uint32(0) >> 1)
 }
