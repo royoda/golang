@@ -85,19 +85,23 @@ func InitAut() {
 
 func main() {
 	InitBeta()
-	/*ImportEventStruct("ad_user_register")
+	//ImportEventStruct("tracking_evt_login_account")
 	// push 推送操作,此处需要注意的时按顺序的，有点坑，建议还是从页面点击
-	client := &http.Client{}
+	/*client := &http.Client{}
 	str := `{"Func":"PushEvent","Obj":"event","Param":{"accessPath":"/vue_admin_event","pageId":6,"accountId":222,"accountName":"罗有达","applicationId":1}}`
 	ul := `https://beta.2tianxin.com/aut/platform_stat_admin/platform/`
-	PostSendHttpRequest(client, str, ul)
+	PostSendHttpRequest(client, str, ul)*/
 	// -- 查询字段信息 行转列 需要推送之后在执行下列方法导入数据
-	ImportEventData("ad_user_register")*/
-
+	ImportEventData("client_activate_event", "2020-05-20 00:00:00", "2021-05-25 23:59:59")
 }
-func ImportEventData(eventName string) {
+func ImportEventData(eventName, startTime, endTime string) {
+	_, err := ClickHouseConClient.Exec("truncate table aut_oxygen." + eventName)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
 	var results []map[string]interface{}
-	err := PlatformStatMysqlConBeta.Raw("select group_concat(english_name) cl from data_center.platform_stat_event_dimension where "+
+	err = PlatformStatMysqlConBeta.Raw("select group_concat(english_name) cl from data_center.platform_stat_event_dimension where "+
 		"event_id = (select id from data_center.platform_stat_event where english_name = ?) and english_name not like 'platform_key_%'",
 		eventName).Scan(&results).Error
 	if err != nil {
@@ -106,8 +110,8 @@ func ImportEventData(eventName string) {
 	}
 	fmt.Println(results[0]["cl"])
 	tx, _ := ClickHouseConClient.Begin()
-	_, err = tx.Exec("INSERT INTO aut_oxygen.ad_user_register("+results[0]["cl"].(string)+") select "+results[0]["cl"].(string)+" "+
-		"from test_oxygen.?", eventName)
+	_, err = tx.Exec("INSERT INTO aut_oxygen." + eventName + "(" + results[0]["cl"].(string) + ") select " + results[0]["cl"].(string) + " " +
+		"from test_oxygen." + eventName + " Where create_at BETWEEN '" + startTime + "' and '" + endTime + "'")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -115,12 +119,13 @@ func ImportEventData(eventName string) {
 		log.Fatal(err)
 	}
 }
+
 func ImportEventStruct(eventName string) {
 	// -- 插入事件信息
 	err := PlatformStatMysqlConBeta.Exec(""+
 		"insert into data_center_aut.platform_stat_event(application_id, event_group_id, event_type, name,`desc`, "+
 		"english_name, event_join_switch,create_at, update_at, event_attr_type) (select application_id, event_group_id, event_type,name,`desc`, "+
-		"english_name,event_join_switch,create_at,update_at,event_attr_type from data_center.platform_stat_event where english_name = eventName)",
+		"english_name,event_join_switch,create_at,update_at,event_attr_type from data_center.platform_stat_event where english_name = ?)",
 		eventName).Error
 	if err != nil {
 		log.Fatalln(err)
@@ -129,7 +134,7 @@ func ImportEventStruct(eventName string) {
 	// -- 插入维度字段信息
 	err = PlatformStatMysqlConBeta.Exec("INSERT INTO data_center_aut.platform_stat_event_dimension "+
 		"(event_id, dimension_type, used_switch, unique_switch, name, english_name, param_format,"+
-		" create_at, update_at, enum_switch, enum_custom_switch, is_from_default_param, alias)  select event_id, dimension_type, used_switch,"+
+		" create_at, update_at, enum_switch, enum_custom_switch, is_from_default_param, alias)  select 0 as event_id, dimension_type, used_switch,"+
 		" unique_switch, name, english_name, param_format, create_at, update_at, enum_switch, enum_custom_switch, is_from_default_param, alias"+
 		" from data_center.platform_stat_event_dimension  where event_id = (select id from data_center.platform_stat_event where english_name = ?) "+
 		"and english_name not like 'platform_key_%'", eventName).Error
@@ -140,7 +145,7 @@ func ImportEventStruct(eventName string) {
 	// -- 修改event所属id
 	err = PlatformStatMysqlConBeta.Exec("update data_center_aut.platform_stat_event_dimension  set event_id = (select id from "+
 		"data_center_aut.platform_stat_event where english_name = ?) "+
-		"where event_id = (select id from data_center.platform_stat_event  where english_name = ?)", eventName, eventName).Error
+		"where event_id = 0", eventName, eventName).Error
 	if err != nil {
 		log.Fatalln(err)
 		return

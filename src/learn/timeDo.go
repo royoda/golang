@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os/exec"
+	"time"
 	"unicode/utf8"
 )
 
@@ -17,6 +18,14 @@ type LogLoginTypeDao struct {
 }
 
 func main() {
+	const timeout = 1 * time.Minute
+	deadline := time.Now().Add(-timeout)
+	fmt.Println(time.Second << uint(3))
+	fmt.Println(deadline.Unix())
+	curTime := time.Now()
+	fmt.Println(curTime.Unix())
+	fmt.Println(curTime.Before(deadline)) // deadline > curTime 为true
+	fmt.Println(curTime.Second())
 	//fmt.Println(time.Now().Add(time.Duration(0) * time.Second).Format("200601"))
 	str := "abcdef 世界"
 	var n = 1

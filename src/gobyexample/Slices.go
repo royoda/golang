@@ -52,4 +52,17 @@ func main() {
 	arrslice = append(arrslice, 12)
 	fmt.Println("arrslice:", arrslice)
 
+	//删除元素
+	var arrRe = []int{1, 2, 3, 4, 5, 6, 7}
+	res := remove(arrRe, 3)
+	fmt.Println(res)
+
+}
+
+// 删除元素
+func remove(slice []int, i int) []int {
+	//copy(slice[i:], slice[i+1:])
+	copy(slice[:i], slice[i+1:])
+
+	return append(slice[:i], slice[i+1:]...)
 }

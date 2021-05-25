@@ -22,6 +22,8 @@ const (
 	localpre     = "http://192.168.0.35:10003/pre/platform_int/platform/api/"
 	pro          = "https://pub-stat.2tianxin.com/proxycommon/platform_int/platform/api/"
 	pre          = "https://beta.2tianxin.com/pre/platform_int/platform/api/"
+	localaut     = "http://192.168.0.35:10003/aut/platform_int/platform/api/"
+	aut          = "https://beta.2tianxin.com/aut/platform_int/platform/api/"
 )
 
 //https://pub-stat.2tianxin.com/platform_stat/third_callback  地址
@@ -35,20 +37,20 @@ func Md5Byte(inputByte []byte) string {
 
 func main() {
 	client := &http.Client{}
-	str := `{
-				"Func": "FetchAnalyseData",
-				"Param": {
-					"applicationName": "test_oxygen",
-					"page": 1,
-					"pageSize": 30,
-					"queryAnalyzeType": 1,
-					"queryAnalyzeIds": "15",
-					"timeGranularity": "3",
-					 "startTime": "2021-04-22",
-					"endTime": "2021-04-27",
-					"day": 7
-				}
-			}`
+	str := `{"Func":"GetOneEventAnalyzeDetail",
+            "Param": {
+                "applicationName":  "test_oxygen",
+                "eventName":  "tracking_evt_consortia_member3",
+                "groupByArr": [],
+                "sumItemMap": {},
+                "applicationId": 1,
+
+                "page": 1,
+                "pageSize": 10000,
+                "timeGroupByDimension": "0",
+                 "whereMap": {}
+                }}
+		`
 	PostSendHttpRequest(client, str, localbeta)
 }
 
