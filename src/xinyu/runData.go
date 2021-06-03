@@ -83,35 +83,67 @@ func InitAut() {
 	InitClickHouse("cc-wz9uj9t11f1b3evcw.ads.rds.aliyuncs.com", "mmorpg", "Erp23swwe44ls", 3306)
 }
 
+const (
+	betaAppName = "test_oxygen"
+	preAppName  = "oxygen"
+
+	betaMysql = "data_center"
+	preMysql  = "data_center_tmp"
+)
+
 func main() {
 	InitBeta()
-	//ImportEventStruct("tracking_evt_login_account")
+	var eventName = "tracking_evt_set_bind_phone_new"
+	// 执行导入事件结构之后需要在心娱门户中赋权，才能点击权限
+	//ImportEventStruct(eventName, preAppName, betaMysql, preMysql)
 	// push 推送操作,此处需要注意的时按顺序的，有点坑，建议还是从页面点击
 	/*client := &http.Client{}
 	str := `{"Func":"PushEvent","Obj":"event","Param":{"accessPath":"/vue_admin_event","pageId":6,"accountId":222,"accountName":"罗有达","applicationId":1}}`
 	ul := `https://beta.2tianxin.com/aut/platform_stat_admin/platform/`
 	PostSendHttpRequest(client, str, ul)*/
 	// -- 查询字段信息 行转列 需要推送之后在执行下列方法导入数据
-	ImportEventData("client_activate_event", "2020-05-20 00:00:00", "2021-05-25 23:59:59")
+	ImportEventData(eventName, "2020-05-20 00:00:00", "2021-06-03 23:59:59",
+		betaMysql, preMysql, betaAppName, preAppName)
 }
-func ImportEventData(eventName, startTime, endTime string) {
-	_, err := ClickHouseConClient.Exec("truncate table aut_oxygen." + eventName)
+func ImportEventData(eventName, startTime, endTime, srcMysqlEnv, tarMysqlEnv, srcApp, tarApp string) {
+	/* 情况所有数据
+	_, err := ClickHouseConClient.Exec("truncate table oxygen." + eventName)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}*/
+	// 获取结构题
+	var srcResults []map[string]interface{}
+	err := PlatformStatMysqlConBeta.Raw("select group_concat(english_name) cl from "+GetEnvCombination(srcMysqlEnv, "platform_stat_event_dimension")+" where "+
+		"event_id = (select id from "+GetEnvCombination(srcMysqlEnv, "platform_stat_event")+" where english_name = ?"+
+		" and application_id = (select id from "+GetEnvCombination(srcMysqlEnv, "platform_stat_application")+" where english_name = ?)) and english_name not like 'platform_key_%'",
+		eventName, srcApp).Scan(&srcResults).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
-	var results []map[string]interface{}
-	err = PlatformStatMysqlConBeta.Raw("select group_concat(english_name) cl from data_center.platform_stat_event_dimension where "+
-		"event_id = (select id from data_center.platform_stat_event where english_name = ?) and english_name not like 'platform_key_%'",
-		eventName).Scan(&results).Error
+	if srcResults[0]["cl"] == nil {
+		log.Fatalln("源事件不存在")
+	}
+	var tarResults []map[string]interface{}
+	err = PlatformStatMysqlConBeta.Raw("select group_concat(english_name) cl from "+GetEnvCombination(tarMysqlEnv, "platform_stat_event_dimension")+" where "+
+		"event_id = (select id from "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+" where english_name = ?"+
+		" and application_id = (select id from "+GetEnvCombination(tarMysqlEnv, "platform_stat_application")+" where english_name = ?)) and english_name not like 'platform_key_%'",
+		eventName, tarApp).Scan(&tarResults).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
-	fmt.Println(results[0]["cl"])
+	if tarResults[0]["cl"] == nil {
+		log.Fatalln("目标事件不存在")
+	}
+	if srcResults[0]["cl"] != tarResults[0]["cl"] {
+		log.Fatalln("源表和目标事件字段不一致")
+		return
+	}
 	tx, _ := ClickHouseConClient.Begin()
-	_, err = tx.Exec("INSERT INTO aut_oxygen." + eventName + "(" + results[0]["cl"].(string) + ") select " + results[0]["cl"].(string) + " " +
-		"from test_oxygen." + eventName + " Where create_at BETWEEN '" + startTime + "' and '" + endTime + "'")
+	_, err = tx.Exec("INSERT INTO " + GetEnvCombination(tarApp, eventName) + "(" + tarResults[0]["cl"].(string) + ") select " + tarResults[0]["cl"].(string) + " " +
+		"from " + GetEnvCombination(srcApp, eventName) + " Where create_at BETWEEN '" + startTime + "' and '" + endTime + "'")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -120,44 +152,53 @@ func ImportEventData(eventName, startTime, endTime string) {
 	}
 }
 
-func ImportEventStruct(eventName string) {
+func ImportEventStruct(eventName, tarApplicationName, srcMysqlEnv, tarMysqlEnv string) {
 	// -- 插入事件信息
 	err := PlatformStatMysqlConBeta.Exec(""+
-		"insert into data_center_aut.platform_stat_event(application_id, event_group_id, event_type, name,`desc`, "+
+		"insert into "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+"(application_id, event_group_id, event_type, name,`desc`, "+
 		"english_name, event_join_switch,create_at, update_at, event_attr_type) (select application_id, event_group_id, event_type,name,`desc`, "+
-		"english_name,event_join_switch,create_at,update_at,event_attr_type from data_center.platform_stat_event where english_name = ?)",
+		"english_name,event_join_switch,create_at,update_at,event_attr_type from "+GetEnvCombination(srcMysqlEnv, "platform_stat_event")+" where english_name = ?)",
 		eventName).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 	// -- 插入维度字段信息
-	err = PlatformStatMysqlConBeta.Exec("INSERT INTO data_center_aut.platform_stat_event_dimension "+
+	err = PlatformStatMysqlConBeta.Exec("INSERT INTO "+GetEnvCombination(tarMysqlEnv, "platform_stat_event_dimension")+
 		"(event_id, dimension_type, used_switch, unique_switch, name, english_name, param_format,"+
 		" create_at, update_at, enum_switch, enum_custom_switch, is_from_default_param, alias)  select 0 as event_id, dimension_type, used_switch,"+
 		" unique_switch, name, english_name, param_format, create_at, update_at, enum_switch, enum_custom_switch, is_from_default_param, alias"+
-		" from data_center.platform_stat_event_dimension  where event_id = (select id from data_center.platform_stat_event where english_name = ?) "+
+		" from data_center.platform_stat_event_dimension  where event_id = (select id from "+GetEnvCombination(srcMysqlEnv, "platform_stat_event")+" where english_name = ?) "+
 		"and english_name not like 'platform_key_%'", eventName).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 	// -- 修改event所属id
-	err = PlatformStatMysqlConBeta.Exec("update data_center_aut.platform_stat_event_dimension  set event_id = (select id from "+
-		"data_center_aut.platform_stat_event where english_name = ?) "+
+	err = PlatformStatMysqlConBeta.Exec("update "+GetEnvCombination(tarMysqlEnv, "platform_stat_event_dimension")+" set event_id = (select id from "+
+		"data_center_tmp.platform_stat_event where english_name = ?) "+
 		"where event_id = 0", eventName, eventName).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 	// -- 修改连通状态
-	err = PlatformStatMysqlConBeta.Exec("update data_center_aut.platform_stat_event  set event_join_switch = 1  "+
-		"where id in (select a.* from (select id from data_center_aut.platform_stat_event where english_name = ?) a)", eventName).Error
+	err = PlatformStatMysqlConBeta.Exec("update "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+"  set event_join_switch = 1  "+
+		"where id in (select a.* from (select id from "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+" where english_name = ?) a)", eventName).Error
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	// -- 修改AppId
+	err = PlatformStatMysqlConBeta.Exec("update "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+"  set application_id = (select id from "+GetEnvCombination(tarMysqlEnv, "platform_stat_application")+
+		" where english_name = ?)"+
+		"where id in (select a.* from (select id from "+GetEnvCombination(tarMysqlEnv, "platform_stat_event")+" where english_name = ?) a)", tarApplicationName, eventName).Error
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 }
+
 func PostSendHttpRequest(client *http.Client, str, url string) {
 	req, err := http.NewRequest("POST", url, strings.NewReader(str))
 	if err != nil {
@@ -171,4 +212,26 @@ func PostSendHttpRequest(client *http.Client, str, url string) {
 		log.Fatalln(err)
 	}
 	fmt.Println(string(body))
+}
+
+// 删除aut事件数据
+func DeleteEventAndDimension(eventName, mysqlEnv string) {
+	err := PlatformStatMysqlConBeta.Exec("Delete "+GetEnvCombination(mysqlEnv, "platform_stat_event_dimension")+" Where event_id = ("+
+		"select id from "+GetEnvCombination(mysqlEnv, "platform_stat_event")+" Where english_name = ? ) ",
+		eventName).Error
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	err = PlatformStatMysqlConBeta.Exec("Delete "+GetEnvCombination(mysqlEnv, "platform_stat_event")+" Where english_name = ? ",
+		eventName).Error
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+}
+
+func GetEnvCombination(env, tableName string) string {
+	return env + "." + tableName
 }
